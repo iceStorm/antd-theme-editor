@@ -3,11 +3,18 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useState } from 'rea
 
 import { Button, ConfigProvider, message, Modal, Spin, ThemeConfig, Typography } from 'antd'
 import { enUS, ThemeEditor, zhCN } from 'antd-token-previewer'
-import { JSONContent, TextContent } from 'vanilla-jsoneditor'
+import { StyleProvider } from '@ant-design/cssinjs'
+
+import {
+  JSONContent,
+  TextContent,
+  OnChange,
+  ContentValidationErrors,
+  Content,
+} from 'vanilla-jsoneditor'
 
 import { useLocale } from './hooks/useLocale'
 import { Editor as JSONEditor } from './JSONEditor'
-import { StyleProvider } from '@ant-design/cssinjs'
 
 function isObject(target: any) {
   return Object.prototype.toString.call(target) === '[object Object]'
@@ -23,7 +30,7 @@ export function AntdThemeEditor() {
 
   const [editModelOpen, setEditModelOpen] = useState<boolean>(false)
   const [editThemeFormatRight, setEditThemeFormatRight] = useState<boolean>(true)
-  const [themeConfigContent, setThemeConfigContent] = useState<JSONContent & TextContent>({
+  const [themeConfigContent, setThemeConfigContent] = useState<Content>({
     text: '{}',
     json: {},
   })
@@ -57,15 +64,16 @@ export function AntdThemeEditor() {
     setEditModelOpen(false)
   }, [themeConfigContent])
 
-  const handleEditConfigChange = (newcontent, preContent, status) => {
+  const handleEditConfigChange: OnChange = (newcontent, preContent, status) => {
     setThemeConfigContent(newcontent)
-    if (
-      Array.isArray(status.contentErrors.validationErrors) &&
-      status.contentErrors.validationErrors.length === 0
-    ) {
-      setEditThemeFormatRight(true)
-    } else {
-      setEditThemeFormatRight(false)
+
+    const validationErrors = (status.contentErrors as ContentValidationErrors).validationErrors
+    if (validationErrors) {
+      if (Array.isArray(validationErrors) && validationErrors.length === 0) {
+        setEditThemeFormatRight(true)
+      } else {
+        setEditThemeFormatRight(false)
+      }
     }
   }
 
@@ -74,15 +82,19 @@ export function AntdThemeEditor() {
       message.error(locale.editJsonContentTypeError)
       return
     }
-    const themeConfig = themeConfigContent.text
-      ? JSON.parse(themeConfigContent.text)
-      : themeConfigContent.json
+
+    const themeConfig = (themeConfigContent as TextContent).text
+      ? JSON.parse((themeConfigContent as TextContent).text)
+      : (themeConfigContent as JSONContent).json
+
     if (!isObject(themeConfig)) {
       message.error(locale.editJsonContentTypeError)
       return
     }
+
     setTheme(themeConfig)
     editModelClose()
+
     messageApi.success(locale.editSuccessfully)
   }, [themeConfigContent])
 
