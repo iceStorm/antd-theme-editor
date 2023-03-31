@@ -15,10 +15,7 @@ import {
 
 import { useLocale } from './hooks/useLocale'
 import { Editor as JSONEditor } from './JSONEditor'
-
-function isObject(target: any) {
-  return Object.prototype.toString.call(target) === '[object Object]'
-}
+import { handleExportThemeToFile, isObject } from './AntdThemeEditor.service'
 
 const ANT_DESIGN_V5_THEME_EDITOR_THEME = 'ant-design-v5-theme-editor-theme'
 
@@ -98,22 +95,6 @@ export function AntdThemeEditor() {
     messageApi.success(locale.editSuccessfully)
   }, [themeConfigContent])
 
-  const handleExport = () => {
-    const file = new File([JSON.stringify(theme, null, 2)], `Ant Design Theme.json`, {
-      type: 'text/json; charset=utf-8;',
-    })
-    const tmpLink = document.createElement('a')
-    const objectUrl = URL.createObjectURL(file)
-
-    tmpLink.href = objectUrl
-    tmpLink.download = file.name
-    document.body.appendChild(tmpLink)
-    tmpLink.click()
-
-    document.body.removeChild(tmpLink)
-    URL.revokeObjectURL(objectUrl)
-  }
-
   return (
     <>
       {contextHolder}
@@ -163,13 +144,9 @@ export function AntdThemeEditor() {
                 {locale.title}
               </Typography.Title>
 
-              <div>
-                <Button onClick={handleExport} style={{ marginRight: 8 }}>
-                  {locale.export}
-                </Button>
-                <Button onClick={handleEditConfig} style={{ marginRight: 8 }}>
-                  {locale.edit}
-                </Button>
+              <div className="flex gap-3">
+                <Button onClick={() => handleExportThemeToFile(theme)}>{locale.export}</Button>
+                <Button onClick={handleEditConfig}>{locale.edit}</Button>
                 <Button type="primary" onClick={handleSave}>
                   {locale.save}
                 </Button>
