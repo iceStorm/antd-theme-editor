@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  /* margin: 0;
+  padding: 0;
+  box-sizing: border-box; */
+}
+
+// fix dark mode switch styling
+.theme-editor-icon-switch {
+  .icon {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+  }
+}

@@ -1,21 +1,13 @@
 import { clsx } from 'clsx'
-import { Suspense, useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 
-import { Button, ConfigProvider, message, Modal, Spin, ThemeConfig, Typography } from 'antd'
+import { Button, ConfigProvider, message, Modal, ThemeConfig, Typography } from 'antd'
 import { enUS, ThemeEditor, zhCN } from 'antd-token-previewer'
 import { StyleProvider } from '@ant-design/cssinjs'
-
-import {
-  JSONContent,
-  TextContent,
-  OnChange,
-  ContentValidationErrors,
-  Content,
-} from 'vanilla-jsoneditor'
+import { JSONTree } from 'react-json-tree'
 
 import { useLocale } from './hooks/useLocale'
-import { Editor as JSONEditor } from './JSONEditor'
-import { handleExportThemeToFile, isObject } from './AntdThemeEditor.service'
+import { handleExportThemeToFile } from './AntdThemeEditor.service'
 
 const ANT_DESIGN_V5_THEME_EDITOR_THEME = 'ant-design-v5-theme-editor-theme'
 
@@ -24,13 +16,7 @@ export function AntdThemeEditor() {
   const [theme, setTheme] = useState<ThemeConfig>({})
 
   const [messageApi, contextHolder] = message.useMessage()
-
   const [editModelOpen, setEditModelOpen] = useState<boolean>(false)
-  const [editThemeFormatRight, setEditThemeFormatRight] = useState<boolean>(true)
-  const [themeConfigContent, setThemeConfigContent] = useState<Content>({
-    text: '{}',
-    json: {},
-  })
 
   useLayoutEffect(() => {
     const storedConfig = localStorage.getItem(ANT_DESIGN_V5_THEME_EDITOR_THEME)
@@ -39,61 +25,10 @@ export function AntdThemeEditor() {
     }
   }, [])
 
-  useEffect(() => {
-    if (editModelOpen === true) return
-
-    setThemeConfigContent({
-      json: theme as any,
-      text: '',
-    })
-  }, [theme, editModelOpen])
-
   const handleSave = () => {
     localStorage.setItem(ANT_DESIGN_V5_THEME_EDITOR_THEME, JSON.stringify(theme))
     messageApi.success(locale.saveSuccessfully)
   }
-
-  const handleEditConfig = () => {
-    setEditModelOpen(true)
-  }
-
-  const editModelClose = useCallback(() => {
-    setEditModelOpen(false)
-  }, [themeConfigContent])
-
-  const handleEditConfigChange: OnChange = (newcontent, preContent, status) => {
-    setThemeConfigContent(newcontent)
-
-    const validationErrors = (status.contentErrors as ContentValidationErrors).validationErrors
-    if (validationErrors) {
-      if (Array.isArray(validationErrors) && validationErrors.length === 0) {
-        setEditThemeFormatRight(true)
-      } else {
-        setEditThemeFormatRight(false)
-      }
-    }
-  }
-
-  const editSave = useCallback(() => {
-    if (!editThemeFormatRight) {
-      message.error(locale.editJsonContentTypeError)
-      return
-    }
-
-    const themeConfig = (themeConfigContent as TextContent).text
-      ? JSON.parse((themeConfigContent as TextContent).text)
-      : (themeConfigContent as JSONContent).json
-
-    if (!isObject(themeConfig)) {
-      message.error(locale.editJsonContentTypeError)
-      return
-    }
-
-    setTheme(themeConfig)
-    editModelClose()
-
-    messageApi.success(locale.editSuccessfully)
-  }, [themeConfigContent])
 
   return (
     <>
@@ -103,29 +38,11 @@ export function AntdThemeEditor() {
         open={editModelOpen}
         title={locale.editModelTitle}
         width={600}
-        okText={locale.save}
-        onOk={editSave}
-        onCancel={editModelClose}
+        okText={locale.ok}
+        onOk={() => setEditModelOpen(false)}
+        onCancel={() => setEditModelOpen(false)}
       >
-        <Suspense
-          fallback={
-            <div
-              style={{
-                textAlign: 'center',
-                width: '100%',
-                padding: '24px 0',
-              }}
-            >
-              <Spin tip={locale.initialEditor} />
-            </div>
-          }
-        >
-          <JSONEditor
-            content={themeConfigContent}
-            onChange={handleEditConfigChange}
-            mainMenuBar={false}
-          />
-        </Suspense>
+        <JSONTree data={theme} theme={{ scheme: 'google' }} invertTheme hideRoot />
       </Modal>
 
       <ConfigProvider theme={{ inherit: false }}>
@@ -146,7 +63,7 @@ export function AntdThemeEditor() {
 
               <div className="flex gap-3">
                 <Button onClick={() => handleExportThemeToFile(theme)}>{locale.export}</Button>
-                <Button onClick={handleEditConfig}>{locale.edit}</Button>
+                <Button onClick={() => setEditModelOpen(true)}>{locale.preview}</Button>
                 <Button type="primary" onClick={handleSave}>
                   {locale.save}
                 </Button>
